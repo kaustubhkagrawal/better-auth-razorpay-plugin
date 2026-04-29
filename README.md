@@ -1,6 +1,6 @@
 # better-auth-razorpay-plugin
 
-Razorpay primitives for Better Auth plugins.
+Razorpay payments and subscriptions for Better Auth.
 
 ## Install
 
@@ -64,6 +64,39 @@ This package exposes both one-time payment primitives and a subscription layer:
 - webhook endpoint at `/razorpay/webhook` for subscription lifecycle events
 - Better Auth schema for `razorpayCustomerId` and local subscription records
 
+## Stripe Reference Parity
+
+This plugin was modeled after the Better Auth Stripe plugin architecture, but it
+is not a one-to-one copy because Razorpay and Stripe expose different billing
+primitives.
+
+Covered from the Stripe plugin pattern:
+
+- Better Auth plugin/client plugin structure
+- customer IDs stored on Better Auth users and organizations
+- local subscription table managed through Better Auth schema
+- subscription lifecycle endpoints and webhook handlers
+- organization subscriptions with `authorizeReference`
+- organization seat quantity syncing
+- internal metadata/notes that cannot be overridden by caller input
+- webhook-first subscription state updates
+- unit tests for schema, metadata/notes, utilities, and webhook handlers
+
+Razorpay-specific additions:
+
+- one-time order creation and Checkout signature verification
+- payment capture and refund helpers
+- Razorpay plan/customer/subscription provider endpoints
+- Razorpay subscription links, offers, pending updates, and invoices
+- raw-body `X-Razorpay-Signature` webhook verification
+
+Not exact Stripe parity:
+
+- no Stripe-style Billing Portal equivalent; Razorpay does not provide the same hosted portal primitive
+- no Stripe Checkout Session abstraction; Razorpay uses Orders/Checkout and Subscription authorization links
+- no React Query hooks export yet
+- no live Razorpay integration tests; the test suite uses unit tests and mocked Better Auth/Razorpay behavior
+
 ## Client usage
 
 ```ts
@@ -105,6 +138,18 @@ const valid = verifyRazorpayWebhookSignature(
   process.env.RAZORPAY_WEBHOOK_SECRET!,
 );
 ```
+
+## Credits
+
+This package uses the Better Auth Stripe plugin as the main architectural
+reference for plugin shape, schema design, client inference, subscription
+lifecycle handling, metadata safety, and test coverage patterns.
+
+The Razorpay subscription/customer/schema/webhook layer was also adapted from
+the community package
+[`iamjasonkendrick/better-auth-razorpay`](https://github.com/iamjasonkendrick/better-auth-razorpay),
+with changes for this package name, Better Auth 1.6.x, one-time payments,
+raw-body webhook verification, safer notes merging, and additional tests.
 
 ## Development
 
