@@ -211,7 +211,7 @@ export interface Subscription {
    */
   groupId?: string | undefined;
   /**
-   * The billing period (daily, weekly, monthly, yearly)
+   * The billing period (daily, weekly, monthly, quarterly, yearly)
    */
   billingPeriod?: string | undefined;
   /**

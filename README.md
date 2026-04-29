@@ -150,6 +150,8 @@ export function BillingSettings({ authClient }: { authClient: any }) {
 
 The subscription layer supports create/upgrade, cancellation, scheduled
 cancellation, pause/resume, update, restore, and pending-update inspection.
+Plan creation accepts Razorpay's documented `daily`, `weekly`, `monthly`,
+`quarterly`, and `yearly` periods.
 
 ```ts
 // Create or upgrade a subscription. Returns the local subscription row and
@@ -173,6 +175,11 @@ await authClient.subscription.cancel({
 // a Stripe-style "undo scheduled cancellation" API for this path.
 await authClient.subscription.restore({});
 ```
+
+The raw subscription-link endpoint also forwards Razorpay's documented optional
+fields for delayed starts, link expiry, upfront add-ons, offers, notification
+control, and notification contact details: `startAt`, `expireBy`, `addons`,
+`offerId`, `customerNotify`, and `notifyInfo`.
 
 For organization or workspace billing, configure `subscription.authorizeReference`.
 The middleware requires it whenever `customerType: "organization"` is used, and
@@ -249,6 +256,10 @@ key-value pairs, with keys and string values up to 256 characters.
 Razorpay recommends using webhooks for payment automation and API polling only when
 you need immediate user-facing confirmation. Webhook signatures must be verified
 against the raw request body, not a parsed JSON object.
+Razorpay can deliver duplicate events and does not guarantee event ordering; the
+plugin verifies signatures and dispatches callbacks, but durable idempotency is
+app-owned. Persist the `x-razorpay-event-id` header in your app if duplicate
+processing would cause side effects.
 
 ```ts
 import { verifyRazorpayWebhookSignature } from "better-auth-razorpay-plugin";

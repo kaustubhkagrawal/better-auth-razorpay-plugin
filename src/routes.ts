@@ -75,9 +75,12 @@ const updateSubscriptionBodySchema = z.object({
   referenceId: z.string().optional(),
   customerType: z.enum(["user", "organization"]).optional(),
   planId: z.string().optional(),
-  quantity: z.number().optional(),
-  remainingCount: z.number().optional(),
+  offerId: z.string().optional(),
+  quantity: z.number().int().positive().optional(),
+  remainingCount: z.number().int().positive().optional(),
+  startAt: z.number().int().positive().optional(),
   scheduleChangeAt: z.enum(["now", "cycle_end"]).optional(),
+  customerNotify: z.boolean().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -97,11 +100,11 @@ const fetchSubscriptionQuerySchema = z.object({
 });
 
 const createPlanBodySchema = z.object({
-  period: z.enum(["daily", "weekly", "monthly", "yearly"]),
-  interval: z.number(),
-  itemName: z.string(),
-  itemAmount: z.number(),
-  itemCurrency: z.string().default("INR"),
+  period: z.enum(["daily", "weekly", "monthly", "quarterly", "yearly"]),
+  interval: z.number().int().positive(),
+  itemName: z.string().min(1),
+  itemAmount: z.number().int().positive(),
+  itemCurrency: z.string().length(3).toUpperCase().default("INR"),
   itemDescription: z.string().optional(),
   notes: z.record(z.string(), z.string()).optional(),
 });
@@ -110,13 +113,33 @@ const fetchPlanQuerySchema = z.object({
   planId: z.string(),
 });
 
+const subscriptionAddonSchema = z.object({
+  item: z.object({
+    id: z.string().optional(),
+    name: z.string().optional(),
+    amount: z.number().int().positive().optional(),
+    currency: z.string().length(3).toUpperCase().optional(),
+    description: z.string().optional(),
+  }),
+  quantity: z.number().int().positive().optional(),
+});
+
 const subscriptionLinkBodySchema = z.object({
   planId: z.string(),
-  totalCount: z.number(),
-  quantity: z.number().optional(),
-  expireBy: z.number().optional(),
+  totalCount: z.number().int().positive(),
+  quantity: z.number().int().positive().optional(),
+  startAt: z.number().int().positive().optional(),
+  expireBy: z.number().int().positive().optional(),
   customerNotify: z.boolean().optional(),
+  addons: z.array(subscriptionAddonSchema).optional(),
+  offerId: z.string().optional(),
   notes: z.record(z.string(), z.string()).optional(),
+  notifyInfo: z
+    .object({
+      notifyPhone: z.union([z.string(), z.number()]).optional(),
+      notifyEmail: z.string().email().optional(),
+    })
+    .optional(),
 });
 
 const pendingUpdateQuerySchema = z.object({
@@ -810,12 +833,17 @@ export const updateSubscription = (options: RazorpayOptions) => {
         const updateParams: Record<string, unknown> = {};
 
         if (ctx.body.planId) updateParams.plan_id = ctx.body.planId;
+        if (ctx.body.offerId) updateParams.offer_id = ctx.body.offerId;
         if (ctx.body.quantity !== undefined)
           updateParams.quantity = ctx.body.quantity;
         if (ctx.body.remainingCount !== undefined)
           updateParams.remaining_count = ctx.body.remainingCount;
+        if (ctx.body.startAt !== undefined)
+          updateParams.start_at = ctx.body.startAt;
         if (ctx.body.scheduleChangeAt)
           updateParams.schedule_change_at = ctx.body.scheduleChangeAt;
+        if (ctx.body.customerNotify !== undefined)
+          updateParams.customer_notify = ctx.body.customerNotify;
 
         const razorpaySub = await (client.subscriptions as any).update(
           subscription.razorpaySubscriptionId,
@@ -1058,14 +1086,35 @@ export const createSubscriptionLink = (options: RazorpayOptions) => {
     async (ctx) => {
       try {
         const client = options.razorpayClient!;
-        const razorpaySub = await (client.subscriptions as any).create({
+        const createParams: Record<string, unknown> = {
           plan_id: ctx.body.planId,
           total_count: ctx.body.totalCount,
-          quantity: ctx.body.quantity || 1,
-          expire_by: ctx.body.expireBy,
+          quantity: ctx.body.quantity ?? 1,
           customer_notify: ctx.body.customerNotify ?? true,
           notes: ctx.body.notes || {},
-        });
+        };
+
+        if (ctx.body.startAt !== undefined)
+          createParams.start_at = ctx.body.startAt;
+        if (ctx.body.expireBy !== undefined)
+          createParams.expire_by = ctx.body.expireBy;
+        if (ctx.body.addons !== undefined) createParams.addons = ctx.body.addons;
+        if (ctx.body.offerId !== undefined)
+          createParams.offer_id = ctx.body.offerId;
+        if (ctx.body.notifyInfo !== undefined) {
+          createParams.notify_info = {
+            ...(ctx.body.notifyInfo.notifyPhone !== undefined
+              ? { notify_phone: ctx.body.notifyInfo.notifyPhone }
+              : {}),
+            ...(ctx.body.notifyInfo.notifyEmail !== undefined
+              ? { notify_email: ctx.body.notifyInfo.notifyEmail }
+              : {}),
+          };
+        }
+
+        const razorpaySub = await (client.subscriptions as any).create(
+          createParams,
+        );
 
         return ctx.json({
           subscriptionId: razorpaySub.id,
