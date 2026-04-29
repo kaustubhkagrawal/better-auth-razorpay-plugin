@@ -7,7 +7,7 @@
   "author": "",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zoratrox/better-auth-razorpay-plugin.git"
+    "url": "git+https://github.com/kaustubhkagrawal/better-auth-razorpay-plugin.git"
   },
   "sideEffects": false,
   "files": [
@@ -72,5 +72,6 @@
     "react": {
       "optional": true
     }
-  }
+  },
+  "packageManager": "pnpm@10.33.0"
 }

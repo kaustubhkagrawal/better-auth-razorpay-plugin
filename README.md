@@ -5,7 +5,7 @@ Razorpay payments and subscriptions for Better Auth.
 ## Install
 
 ```sh
-npm install better-auth-razorpay-plugin razorpay
+pnpm add better-auth-razorpay-plugin razorpay
 ```
 
 ## Server setup
@@ -286,8 +286,8 @@ raw-body webhook verification, safer notes merging, and additional tests.
 ## Development
 
 ```sh
-npm install
-npm run typecheck
-npm run build
-npm test
+pnpm install
+pnpm typecheck
+pnpm build
+pnpm test
 ```
