@@ -4,6 +4,7 @@ import type {
   CreateRazorpayOrderInput,
   RazorpayOrderResponse,
   RazorpayPaymentResponse,
+  RazorpayRefundResponse,
   RazorpayPluginOptions,
 } from "./types.js";
 
@@ -50,6 +51,20 @@ type RazorpayPayment = {
   created_at: number;
 };
 
+type RazorpayRefund = {
+  id: string;
+  entity: string;
+  amount?: number | null;
+  currency: string;
+  payment_id: string;
+  receipt?: string | null;
+  status: string;
+  notes?: Record<string, string | number | null>;
+  created_at: number;
+  speed_requested?: string | null;
+  speed_processed?: string | null;
+};
+
 type RazorpayClient = {
   orders: {
     create(input: RazorpayOrderCreateRequestBody): Promise<RazorpayOrder>;
@@ -57,13 +72,27 @@ type RazorpayClient = {
   };
   payments: {
     fetch(paymentId: string): Promise<RazorpayPayment>;
+    capture(
+      paymentId: string,
+      amount: number,
+      currency: string,
+    ): Promise<RazorpayPayment>;
+    refund(
+      paymentId: string,
+      input: {
+        amount?: number;
+        speed?: "normal" | "optimum";
+        receipt?: string;
+        notes?: Record<string, string | number | null>;
+      },
+    ): Promise<RazorpayRefund>;
   };
 };
 
 export const createRazorpayClient = (options: RazorpayPluginOptions) =>
   new Razorpay({
-    key_id: options.keyId,
-    key_secret: options.keySecret,
+    key_id: options.keyId!,
+    key_secret: options.keySecret!,
   }) as unknown as RazorpayClient;
 
 export const toRazorpayOrderInput = (
@@ -133,4 +162,20 @@ export const serializeRazorpayPayment = (
   errorCode: payment.error_code ?? null,
   errorDescription: payment.error_description ?? null,
   createdAt: payment.created_at,
+});
+
+export const serializeRazorpayRefund = (
+  refund: RazorpayRefund,
+): RazorpayRefundResponse => ({
+  id: refund.id,
+  entity: refund.entity,
+  amount: refund.amount ?? null,
+  currency: refund.currency,
+  paymentId: refund.payment_id,
+  receipt: refund.receipt ?? null,
+  status: refund.status,
+  notes: refund.notes ?? {},
+  createdAt: refund.created_at,
+  speedRequested: refund.speed_requested ?? null,
+  speedProcessed: refund.speed_processed ?? null,
 });

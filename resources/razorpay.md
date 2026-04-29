@@ -7,6 +7,7 @@ Sources:
 - https://razorpay.com/docs/api/orders/create/
 - https://razorpay.com/docs/payments/server-integration/go/integration-steps/
 - https://razorpay.com/docs/webhooks/validate-test/
+- https://github.com/iamjasonkendrick/better-auth-razorpay
 
 ## Orders
 
@@ -39,3 +40,8 @@ Sources:
 - Keep provider-specific error messages centralized.
 - Sanitize user-controlled metadata-like objects before passing them to the provider.
 - Treat webhooks as the reliable automation mechanism, with synchronous API verification as a supplement.
+
+The subscription/customer/schema/webhook layer was also adapted from the MIT-licensed
+community package `iamjasonkendrick/better-auth-razorpay`, with local changes for
+this package name, Better Auth 1.6.x, one-time orders/payments, raw-body webhook
+verification, and safer notes merging.

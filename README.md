@@ -13,12 +13,29 @@ npm install better-auth-razorpay-plugin razorpay
 ```ts
 import { betterAuth } from "better-auth";
 import { razorpayPlugin } from "better-auth-razorpay-plugin";
+import Razorpay from "razorpay";
 
 export const auth = betterAuth({
   plugins: [
     razorpayPlugin({
-      keyId: process.env.RAZORPAY_KEY_ID!,
+      razorpayClient: new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID!,
+        key_secret: process.env.RAZORPAY_KEY_SECRET!,
+      }),
       keySecret: process.env.RAZORPAY_KEY_SECRET!,
+      razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET!,
+      createCustomerOnSignUp: true,
+      subscription: {
+        enabled: true,
+        plans: [
+          {
+            planId: "plan_monthly",
+            annualPlanId: "plan_yearly",
+            name: "pro",
+            totalCount: 12,
+          },
+        ],
+      },
     }),
   ],
 });
@@ -34,6 +51,18 @@ export const authClient = createAuthClient({
   plugins: [razorpayClientPlugin()],
 });
 ```
+
+## Scope
+
+This package exposes both one-time payment primitives and a subscription layer:
+
+- one-time orders, payment fetch, capture, refund, and Checkout signature verification
+- Razorpay customers: create, edit, list, fetch
+- Razorpay plans: create, list, fetch
+- subscriptions: upgrade/create, list, get, update, cancel, pause, resume, restore
+- Razorpay subscription utilities: create link, pending update, cancel update, invoices, offers
+- webhook endpoint at `/razorpay/webhook` for subscription lifecycle events
+- Better Auth schema for `razorpayCustomerId` and local subscription records
 
 ## Client usage
 
