@@ -89,12 +89,12 @@ Razorpay-specific additions:
 - Razorpay plan/customer/subscription provider endpoints
 - Razorpay subscription links, offers, pending updates, and invoices
 - raw-body `X-Razorpay-Signature` webhook verification
+- React Query helper hooks through `better-auth-razorpay-plugin/react`
 
 Not exact Stripe parity:
 
 - no Stripe-style Billing Portal equivalent; Razorpay does not provide the same hosted portal primitive
 - no Stripe Checkout Session abstraction; Razorpay uses Orders/Checkout and Subscription authorization links
-- no React Query hooks export yet
 - no live Razorpay integration tests; the test suite uses unit tests and mocked Better Auth/Razorpay behavior
 
 ## Client usage
@@ -118,6 +118,127 @@ const payment = await authClient.razorpay.payment({
   },
 });
 ```
+
+## React Query Helpers
+
+React Query helpers are available from the optional `./react` export. Install
+React Query in your app before using these hooks.
+
+```tsx
+import {
+  useSubscriptionList,
+  useUpgradeSubscription,
+} from "better-auth-razorpay-plugin/react";
+
+export function BillingSettings({ authClient }: { authClient: any }) {
+  useSubscriptionList(authClient);
+  const upgrade = useUpgradeSubscription(authClient);
+
+  return (
+    <button
+      type="button"
+      onClick={() => upgrade.mutate({ plan: "pro", annual: true })}
+      disabled={upgrade.isPending}
+    >
+      Upgrade
+    </button>
+  );
+}
+```
+
+## Subscription Control
+
+The subscription layer supports create/upgrade, cancellation, scheduled
+cancellation, pause/resume, update, restore, and pending-update inspection.
+
+```ts
+// Create or upgrade a subscription. Returns the local subscription row and
+// the Razorpay subscription, including the Razorpay `short_url` when present.
+await authClient.subscription.upgrade({
+  plan: "pro",
+  annual: true,
+});
+
+// Cancel immediately.
+await authClient.subscription.cancel({
+  cancelAtCycleEnd: false,
+});
+
+// Schedule cancellation for the cycle end.
+await authClient.subscription.cancel({
+  cancelAtCycleEnd: true,
+});
+
+// Restore only clears the local pending-cancel flag. Razorpay does not expose
+// a Stripe-style "undo scheduled cancellation" API for this path.
+await authClient.subscription.restore({});
+```
+
+For organization or workspace billing, configure `subscription.authorizeReference`.
+The middleware requires it whenever `customerType: "organization"` is used, and
+also when callers pass a user-level `referenceId` different from the current
+user id.
+
+```ts
+razorpayPlugin({
+  // ...
+  subscription: {
+    enabled: true,
+    plans: [{ planId: "plan_monthly", name: "pro" }],
+    async authorizeReference({ user, referenceId, action }) {
+      return user.id === referenceId || action === "list-subscription";
+    },
+    async getSubscriptionCreateParams({ plan }) {
+      return {
+        customer_notify: 1,
+        notes: { plan: plan.name },
+      };
+    },
+  },
+});
+```
+
+## Subscription Callbacks
+
+Subscription state changes should be driven from Razorpay webhooks. The plugin
+routes webhook events to typed callbacks on `subscription`.
+
+```ts
+razorpayPlugin({
+  // ...
+  subscription: {
+    enabled: true,
+    plans: [{ planId: "plan_monthly", name: "pro" }],
+    async onSubscriptionActivated({ subscription, razorpaySubscription }) {
+      // Grant access after the first successful payment.
+    },
+    async onSubscriptionCharged({ subscription }) {
+      // Recurring charge succeeded.
+    },
+    async onSubscriptionRenewed({ subscription }) {
+      // Recurring charge after the first payment.
+    },
+    async onSubscriptionPending({ subscription }) {
+      // Payment retry is pending.
+    },
+    async onSubscriptionHalted({ subscription }) {
+      // Retries exhausted or payment issue requires attention.
+    },
+    async onSubscriptionCancelled({ subscription }) {
+      // Revoke or schedule access removal.
+    },
+  },
+  async onEvent(event) {
+    // Optional catch-all for every verified Razorpay webhook event.
+  },
+});
+```
+
+Available callbacks include `onSubscriptionAuthenticated`,
+`onSubscriptionActivated`, `onSubscriptionCharged`, `onSubscriptionRenewed`,
+`onSubscriptionPending`, `onSubscriptionHalted`, `onSubscriptionUpdated`,
+`onSubscriptionPaused`, `onSubscriptionResumed`, `onSubscriptionCancelled`, and
+`onSubscriptionCompleted`.
 
 `amount` is passed to Razorpay in the smallest currency unit, for example paise for INR.
 For INR orders, Razorpay requires at least `100` subunits. Notes are limited to 15
