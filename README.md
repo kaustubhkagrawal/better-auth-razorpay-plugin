@@ -1,5 +1,9 @@
 # better-auth-razorpay-plugin
 
+[![npm version](https://img.shields.io/npm/v/better-auth-razorpay-plugin.svg)](https://www.npmjs.com/package/better-auth-razorpay-plugin)
+[![license](https://img.shields.io/npm/l/better-auth-razorpay-plugin.svg)](./LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-ready-3178c6.svg)](https://www.typescriptlang.org/)
+
 Razorpay payments and subscriptions for Better Auth.
 
 ## Install
