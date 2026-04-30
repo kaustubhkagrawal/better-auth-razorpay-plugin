@@ -3,6 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/better-auth-razorpay-plugin.svg)](https://www.npmjs.com/package/better-auth-razorpay-plugin)
 [![license](https://img.shields.io/npm/l/better-auth-razorpay-plugin.svg)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-ready-3178c6.svg)](https://www.typescriptlang.org/)
+[![CI](https://github.com/kaustubhkagrawal/better-auth-razorpay-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/kaustubhkagrawal/better-auth-razorpay-plugin/actions/workflows/ci.yml)
 
 Razorpay payments and subscriptions for Better Auth.
 
@@ -291,7 +292,13 @@ raw-body webhook verification, safer notes merging, and additional tests.
 
 ```sh
 pnpm install
+pnpm check
 pnpm typecheck
 pnpm build
 pnpm test
+pnpm test:coverage
 ```
+
+Pull requests run typecheck, tests, and build on Node.js 20 and 22. Releases
+publish to npm from `v*.*.*` tags after the same checks pass; configure the
+repository secret `NPM_TOKEN` before cutting a release tag.
